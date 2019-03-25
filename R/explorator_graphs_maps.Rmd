@@ -1,0 +1,338 @@
+---
+title: "Exploratory Graphs and Maps"
+author: "McEwen Khundi"
+date: "24 March 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r packages}
+library(here)
+library(tidyverse)
+library(sf)
+library(ggspatial) 
+library(scales)
+library(viridis)
+library(arsenal)
+library(ggthemes)
+#devtools::install_github("petermacp/BlantyreTBEpi")
+library(BlantyreTBEpi)
+```
+
+Read data 
+```{r}
+scaleFUN <- function(x) sprintf("%.2f", x)
+
+malawi = readRDS(file = here("data/malawi.rds"))
+malawi_lakes = readRDS(file = here("data/malawi_lakes.rds"))
+
+data("hsas", package="BlantyreTBEpi")
+data("clinics", package="BlantyreTBEpi")
+data("hsas", package="BlantyreTBEpi")
+data("dat", package="BlantyreTBEpi")
+data("x01_epal2", package="BlantyreTBEpi")
+data("cnrs", package="BlantyreTBEpi")
+data("cnrs", package="BlantyreTBEpi")
+```
+
+Map theme
+Create a base theme function for the maps.
+```{r}
+map_light <- function(...) {
+  theme_minimal() +
+  theme(
+    axis.line = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major = element_line(color = "#ebebe5", size = 0.2),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "white", color = NA), 
+    panel.background = element_rect(fill = "white", color = NA), 
+    legend.background = element_rect(fill = "white", color = NA),
+    panel.border = element_blank(),
+    ...
+  )
+}
+
+```
+
+## 1. Map of administrative districts of Malawi
+```{r}
+fg1 <- ggplot() +
+  geom_sf(data=malawi, aes(fill = bt_label)) +
+  scale_fill_manual(values = alpha(c("#DDDDDD", "#FF851B")),guide=FALSE) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Map of administrative districts of Malawi",
+       subtitle = "Blantyre is marked orange") +
+  geom_sf(data=malawi_lakes[malawi_lakes$NAME=="LAKE NYASA",], fill = "light blue", color = "blue") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+
+ fg1
+ ggsave("malawi_districts.png", height = 10, width = 8, dpi=300, 
+       path = here("figures"))
+```
+
+## 2. Map of 315 community catchment areas in Blantyre
+```{r}
+
+fg2 <- ggplot() +
+  geom_sf(data=hsas) +
+  geom_sf(data=clinics, shape = 17) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Map of 315 community catchment areas in Blantyre",
+       subtitle = "Each cluster has a  responsible CHW") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+ 
+fg2 
+ ggsave("hsa_areas_clinics.png", height = 10, width = 8, dpi=300, 
+       path = here("figures")) 
+```
+
+## 3. Map of the population of Blantyre
+```{r}
+
+ fg3 <- ggplot() +
+  geom_sf(data=dat, aes(fill = total) ) +
+  scale_fill_viridis(option = "magma", direction = -1,name ="Count", labels=comma) +
+  geom_sf(data=clinics, shape = 17) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Total population of Blantyre") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+
+ fg3  
+ ggsave("total_pop.png", height = 10, width = 8, dpi=300, 
+       path = here("figures")) 
+```
+
+## 4. Map of the population density of Urban Blantyre
+```{r}
+ fg4 <- ggplot() +
+  geom_sf(data=dat, aes(fill = popdens) ) +
+  scale_fill_viridis(option = "magma", direction = -1,
+                     name = expression ("Population\nper\nsquare km"), labels=comma) +
+  geom_sf(data=clinics, shape = 17) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Population density of Blantyre") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+ 
+fg4 
+ ggsave("pop_density.png", height = 10, width = 8, dpi=300, 
+       path = here("figures")) 
+```
+
+## 5 Mean number of people per household in Blantyre
+```{r}
+fg5 <-  ggplot() +
+  geom_sf(data=dat, aes(fill = mean_people_per_hh)) +
+    scale_fill_viridis(option = "magma", direction = -1,
+                     name = expression ("Mean number\nof people\nper household"), labels=scaleFUN) +
+  geom_sf(data=clinics, shape = 17) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Mean number people per household in Blantyre") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+ 
+fg5 
+ ggsave("mean_household.png", height = 10, width = 8, dpi=300, 
+       path = here("figures")) 
+```
+
+## 6. Poverty distribution
+Plot the estimaed mean proportion of the population living on less than $2 per day. [Note this is estimated from Worldpop data]
+
+```{r}
+fg6 <-  ggplot() +
+  geom_sf(data=dat, aes(fill = mwi11povcons200)) +
+     scale_fill_viridis(option = "magma", direction = -1,
+                     name = expression ("Mean percentage\nof people\nliving on\nless than\nUS $2 per day"),
+                     labels=comma, limits = c(0,100)) +
+  geom_sf(data=clinics, shape = 17) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Mean percentage of people living on less than\n US $2 per day in Blantyre") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+ 
+fg6 
+ ggsave("mean_poverty.png", height = 10, width = 8, dpi=300, 
+       path = here("figures")) 
+```
+
+## 7. Distance to nearest TB registration site
+
+```{r}
+fg7 <-  ggplot() +
+  geom_sf(data=dat, aes(fill = clinic_distance)) +
+     scale_fill_viridis(option = "magma", direction = -1,
+                     name = expression ("Distance (m)\nto nearest\nTB registration\ncentre"),
+                     labels=comma,
+                     limits = c(0,10000)) +
+  geom_sf(data=clinics, shape = 17) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Distance (m) to nearest TB registration centre in Blantyre") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+ 
+fg7 
+ ggsave("clinic_distance.png", height = 10, width = 8, dpi=300, 
+       path = here("figures")) 
+```
+
+## 8. Male to female adult ratio
+```{r}
+fg8 <-  ggplot() +
+  geom_sf(data=dat, aes(fill = m_f_adult_ratio)) +
+     scale_fill_viridis(option = "magma", direction = -1,
+                        name = expression ("Adult\nMale:Female\nratio"),
+                     labels=scaleFUN) +
+  geom_sf(data=clinics, shape = 17) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Adult male to female ratio in Blantyre") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+
+fg8  
+ ggsave("male_female.png", height = 10, width = 8, dpi=300, 
+       path = here("figures")) 
+```
+
+## 9. Percentage of HSA cluster population who are adult
+```{r}
+fg9 <- ggplot() +
+  geom_sf(data=dat, aes(fill = prop_adults)) +
+     scale_fill_viridis(option = "magma", direction = -1,
+                     name = expression ("Percent\naged\n15 years\nor older"),
+                     labels=comma) +
+  geom_sf(data=clinics, shape = 17) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Percent aged 15 years or older in Blantyre") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+  
+fg9
+ ggsave("prop_adults.png", height = 10, width = 8, dpi=300, 
+       path = here("figures")) 
+```
+
+## 10. Sputum smear positive to negative ratio
+```{r}
+#Add in a term for ratio of smearpositive to smearnegative cases
+
+dat <- dat %>%
+  mutate(smr_ratio = n_smearpos_cases/(n_cases-n_smearpos_cases))
+
+dat$smr_ratio[is.nan(dat$smr_ratio)] <- 1
+dat$smr_ratio[is.infinite(dat$smr_ratio)] <- 1
+
+
+fg10 <- ggplot() +
+  geom_sf(data=dat, aes(fill = smr_ratio)) +
+     scale_fill_viridis(option = "magma", direction = -1,
+                     name = expression ("Smr +ve:-ve\nratio"),
+                     labels=scaleFUN)  +
+  geom_sf(data=clinics, shape = 17) +
+  labs(y = "Latitude", 
+       x = "Longitude",
+       title = "Sputum smear positive to negative ratio in Blantyre") +
+  theme_light() +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  annotation_north_arrow(location = "tr", style = north_arrow_fancy_orienteering)
+
+fg10
+ ggsave("spear_posneg.png", height = 10, width = 8, dpi=300, 
+       path = here("figures")) 
+```
+
+## 11. Table 1: Characteristics of TB cases
+Compare characteristics of cases located within and outside of HSA catchment areas.
+```{r,  results="asis"}
+x01_epal2$year <- fct_drop(x01_epal2$year)
+
+
+table1 <- tableby(resident ~ year + sex + age + tbclass + smearstatus + hivstatus + lab_smear + lab_culture + lab_id + any_micro_confirm, data = x01_epal2)
+
+summary(table1)
+```
+
+## 12. TB case notification rates
+Plot overall TB case notification rates.
+
+```{r}
+cnr1 <- ggplot() +
+  geom_sf(data=dat) +
+  geom_sf(data=cnrs, aes(fill=cnr)) + 
+  geom_sf(data=clinics, shape=17, colour="#22211d") +
+   map_light() +
+  scale_fill_distiller(palette = "Spectral",
+                     name = "",
+                     labels=comma,
+                     limits = c(0,999)) +
+  labs(x = NULL, 
+       y = NULL,
+       title = "TB case notification rates") +
+  facet_grid(~year, drop = FALSE) +
+  theme(panel.background = element_rect(fill = "white", color = "#22211d" )) 
+
+cnr1
+ggsave("case_notifications.png", width=12, height=6, dpi=300, 
+       path = here("figures")) 
+```
+
+Now plot microbiologically-confirmed TB case notification rate
+```{r}
+cnr2 <- ggplot() +
+  geom_sf(data=dat) +
+  geom_sf(data=cnrs, aes(fill=micro_cnr)) + 
+  geom_sf(data=clinics, shape=17, colour="#22211d") +
+  map_light() +
+  scale_fill_distiller(palette = "Spectral",
+                     name = "",
+                     labels=comma,
+                     limits = c(0,500)) +
+  labs(x = NULL, 
+       y = NULL) +
+  facet_grid(~year, drop = FALSE) +
+  theme(panel.background = element_rect(fill = "white", color = "#22211d" ))
+
+cnr2
+
+ggsave(file="micro_cnrs.png", width=12, height=6, dpi=300, 
+       path = here("figures"))
+```
+
+
+
+
+
+
+
