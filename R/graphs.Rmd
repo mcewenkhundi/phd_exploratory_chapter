@@ -1,0 +1,55 @@
+---
+title: "Graphs"
+author: "McEwen Khundi"
+date: "01/06/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Presentation graphs
+```{r cars}
+library(tidyverse)
+library(here)
+library(pmthemes)
+```
+
+
+```{r pressure, echo=FALSE}
+who_tb <- read.csv(here("data-raw/TB_burden_countries_2019-06-01.csv"))
+
+who_tb_afric <- who_tb %>%
+                select(country,g_whoregion,year,e_inc_100k, c_newinc_100k) %>%
+                filter(g_whoregion == "AFR")
+
+who_tb_afric_yr <- who_tb_afric %>%
+                    group_by(year) %>%
+                    summarise(incid_year = sum(e_inc_100k), 
+                              not_year = sum(c_newinc_100k, na.rm = T),
+                              n= n(), 
+                              Incidence = incid_year/n,
+                              Notification = not_year/n)
+
+who_tb_afric_yr_long <- gather(who_tb_afric_yr[,c("year","Incidence","Notification")], key= "type", value = TBdata,-year)
+
+write_csv(who_tb_afric_yr,here("data/who_tb_afric_yr.csv"))
+
+ggplot(who_tb_afric_yr_long, aes(x=year, y=TBdata, color = type)) +
+  geom_line() +
+  ylab(" ") +
+  xlab(" ") +
+  xlim(2000,2020) +
+  #ylim(200,400) +
+  theme_light() +
+  theme(legend.title = element_blank())
+
+
+```
+
+
+
+

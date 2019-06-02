@@ -1,0 +1,23 @@
+---
+title: "Other diagrams"
+author: "McEwen Khundi"
+date: "15/05/2019"
+output:
+  html_document: default
+  always_allow_html: yes
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(DiagrammeR)
+```
+
+## R Markdown
+```{r}
+grViz("
+digraph rmarkdown {
+      A -> B}", height = 200)
+```
+
+
