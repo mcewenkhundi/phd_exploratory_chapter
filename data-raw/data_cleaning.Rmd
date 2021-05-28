@@ -1,0 +1,54 @@
+---
+title: "Data cleaning"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r packages}
+library(here)
+library(tidyverse)
+library(sf)
+
+```
+Import the map of malawi and africa data
+```{r}
+malawi <- sf::st_read(here("data-raw/MWI_adm/MWI_adm1.shp"))
+
+malawi_lakes <- sf::st_read(here("data-raw/MWI_wat/MWI_water_areas_dcw.shp"))
+
+#plot(malawi_lakes[!is.na(malawi_lakes$NAME), ])
+
+#plot(malawi[])
+
+#malawi_points<- st_centroid(malawi)
+#malawi_points <- cbind(malawi, st_coordinates(st_centroid(malawi$geometry)))
+
+malawi <- malawi %>%
+          mutate(bt_label = if_else(NAME_1=="Blantyre",true = "Blantyre",false = ""))
+
+saveRDS(malawi, file= here("data/malawi.rds"))
+saveRDS(malawi_lakes, file= here("data/malawi_lakes.rds"))
+
+#Blantyre clusters
+#Africa map
+#http://www.maplibrary.org/library/stacks/Africa/index.htm
+africa <- sf::st_read(here("data-raw/Africa_SHP/Africa.shp"))
+africa <- st_set_crs(africa,4326)
+
+africa <- africa %>%
+          mutate(bt_label = if_else(COUNTRY=="Malawi",true = "Malawi",false = ""))
+
+
+saveRDS(africa, file= here("data/africa.rds"))
+
+```
+

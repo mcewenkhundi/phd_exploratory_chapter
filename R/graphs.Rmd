@@ -42,8 +42,8 @@ ggplot(who_tb_afric_yr_long, aes(x=year, y=TBdata, color = type)) +
   geom_line() +
   ylab(" ") +
   xlab(" ") +
+  ylim(0,400) +
   xlim(2000,2020) +
-  #ylim(200,400) +
   theme_light() +
   theme(legend.title = element_blank())
 
